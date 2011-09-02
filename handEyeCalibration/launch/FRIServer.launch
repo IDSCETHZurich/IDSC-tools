@@ -1,0 +1,5 @@
+<launch>                                                                                                                                                 
+   <node name="FRIServer" pkg="ocl" type="deployer-gnulinux" 
+   	args=" -s /home/demo/ros/stacks/gajanLocal/handEyeCalibration/launch/FRIServer.xml --">
+   </node>           
+</launch> 
