@@ -1,1 +1,10 @@
 IDSC-tools
+
+handEyeCalibration
+------------------
+A ros package for handEyeCalibration based on 
+Park, F.C.; Martin, B.J.; , "Robot sensor calibration: solving AX=XB on the Euclidean group," Robotics and Automation, IEEE Transactions on , vol.10, no.5, pp.717-721, Oct 1994
+doi: 10.1109/70.326576
+URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=326576&isnumber=7747
+[See README inside package for more information]
+
