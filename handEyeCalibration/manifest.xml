@@ -4,7 +4,7 @@
      handEyeCalibration
 
   </description>
-  <author>Gajamohan Mohanarajah</author>
+  <author>Gajamohan Mohanarajah and Ferrara Francesco</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/handEyeCalibration</url>
@@ -16,5 +16,3 @@
   <depend package="std_msgs"/>
   <depend package="image_transport"/>
 </package>
-
-

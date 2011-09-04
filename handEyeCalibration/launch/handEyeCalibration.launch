@@ -1,6 +1,5 @@
 <launch>
 	<include file="$(find handEyeCalibration)/launch/camera.launch"/>
-	<include file="$(find handEyeCalibration)/launch/FRIServer.launch"/>
 	<node pkg="handEyeCalibration" type="handEyeCalibration" name="handEyeCalibration" respawn="false" output="screen">
 		<rosparam file="$(find handEyeCalibration)/launch/parameters.yaml" command="load"/> 
 	</node>

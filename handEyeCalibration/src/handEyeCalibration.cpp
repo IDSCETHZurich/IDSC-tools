@@ -1,3 +1,29 @@
+/***************************************************************************
+
+    File:           handEyeCalibration.cpp
+    Author(s):      Gajamohan Mohanarajah/Ferrara Francesco
+    Affiliation:    IDSC - ETH Zurich
+    e-mail:         gajan@ethz.ch
+
+
+ ***************************************************************************
+ *   This library is free software; you can redistribute it and/or         *
+ *   modify it under the terms of the GNU Lesser General Public            *
+ *   License as published by the Free Software Foundation; either          *
+ *   version 2.1 of the License, or (at your option) any later version.    *
+ *                                                                         *
+ *   This library is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU     *
+ *   Lesser General Public License for more details.                       *
+ *                                                                         *
+ *   You should have received a copy of the GNU Lesser General Public      *
+ *   License along with this library; if not, write to the Free Software   *
+ *   Foundation, Inc., 59 Temple Place,                                    *
+ *   Suite 330, Boston, MA  02111-1307  USA                                *
+ *                                                                         *
+ ***************************************************************************/
+
 #include "handEyeCalibration.hpp"
 #define SIGLE_MEASUREMENT_DEBUG 0
 #define ESTIMATION_DEBUG 1
@@ -8,18 +34,13 @@ CalibrationNode::CalibrationNode(ros::NodeHandle& n):
 	ROSNode (n),
 	imageTransport (n)
 {
-	int width, height;
-	ROSNode.getParam ("handEyeCalibration/width", width);
-	ROSNode.getParam ("handEyeCalibration/height", height);
-	image_size = cv::Size_<int> (width, height);
 
-	int points_per_column, points_per_row; //8,6
-	ROSNode.getParam ("handEyeCalibration/points_per_column", points_per_column);
-	ROSNode.getParam ("handEyeCalibration/points_per_row", points_per_row);
-	pattern = cv::Size_<int> (points_per_column, points_per_row);
+	int squares_per_column, squares_per_row;
+	ROSNode.getParam ("handEyeCalibration/squares_per_column", squares_per_column);
+	ROSNode.getParam ("handEyeCalibration/squares_per_row", squares_per_row);
+	pattern = cv::Size_<int> (squares_per_column, squares_per_row);
 
-	ROSNode.getParam ("handEyeCalibration/pattern_width", patternHeight);
-	ROSNode.getParam ("handEyeCalibration/pattern_height", patternWidth);
+	ROSNode.getParam ("handEyeCalibration/square_size", squareSize);
 
 	calibrationImageSubscriber = imageTransport.subscribe("/camera/image_rect", 1, &CalibrationNode::imgCallback, this);
 	robotPoseSubscriber = ROSNode.subscribe ("/msrCartPos", 1, &CalibrationNode::poseCallback, this);
@@ -91,8 +112,6 @@ void CalibrationNode::cameraInfoCallback (const sensor_msgs::CameraInfoConstPtr&
 
 
 	distortionCoefficients = cv::Mat(5, 1, CV_64F);
-//	for(int i=0; i<3; i++)
-//		distortionCoefficients.at<double>(i,1) = msg->D[i];
 	for(int i=0; i<5; i++)
 		distortionCoefficients.at<double>(i,1) = 0.0;
 
@@ -117,10 +136,11 @@ int CalibrationNode::storeData ()
 		}while(readPoseFlag == false);
 
 		cv::Mat gray_image;
-		gray_image.create (image_size, CV_8UC1);
+
+		gray_image.create (image.size(), CV_8UC1);
 		cv::cvtColor (image, gray_image, CV_BGR2GRAY, 0);
 
-		cv::cornerSubPix (gray_image, corners, cv::Size (5, 5), cv::Size (-1, -1),
+		cv::cornerSubPix (gray_image, corners, cv::Size (10, 10), cv::Size (-1, -1),
 				cv::TermCriteria (CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
 
 		cv::drawChessboardCorners (image, pattern, corners, patternWasFound);
@@ -139,15 +159,11 @@ int CalibrationNode::storeData ()
 		std::cout << "imagePoints" << std::endl << imagePoints << std::endl;
 #endif
 
-		// cout << "hight & width" << pattern.height << " : " << pattern.width << endl;
-
-		//width - 8 - x
-		//height - 6 - y
 		//row by row, left to right in every row
 		for(int i=0; i < pattern.height; i++){
 			for(int j=0; j < pattern.width; j++){
-				objectPoints.at<float>(i*pattern.width+j, 0) = j*patternWidth;
-				objectPoints.at<float>(i*pattern.width+j, 1) = i*patternHeight;
+				objectPoints.at<float>(i*pattern.width+j, 0) = j*squareSize;
+				objectPoints.at<float>(i*pattern.width+j, 1) = i*squareSize;
 				objectPoints.at<float>(i*pattern.width+j, 2) = 0.0;
 			}
 		}
@@ -168,8 +184,6 @@ int CalibrationNode::storeData ()
 		cv::Mat rotMat = cv::Mat(3, 3, CV_64F);
 		cv::Rodrigues(rvecs, rotMat);
 
-		// cout << "rotMat" << endl << rotMat << endl;
-
 		for(int i=0; i < 3; i++)
 			for(int j=0; j < 3; j++)
 				rotationCB(i,j) = rotMat.at<double>(i,j);
@@ -188,11 +202,11 @@ int CalibrationNode::storeData ()
 		std::cout << "Checkerboard found. Measurements Updated." << std::endl;
 
 #if ESTIMATION_DEBUG
-	std::cout << "%Adding data #" << rotationRB_vec.size() << std::endl;
-	std::cout << "rotRB" << rotationRB_vec.size() << " = [ " << rotationRB << " ]; " <<std::endl;
-	std::cout << "transRB" << rotationRB_vec.size() << " = [ " << translationRB << " ]; " << std::endl;
-	std::cout << "rotCB" << rotationRB_vec.size() << " = [ " << rotationCB << " ]; " << std::endl;
-	std::cout << "transCB" << rotationRB_vec.size() << " = [ " << translationCB << " ]; " << std::endl;
+		std::cout << "%Adding data #" << rotationRB_vec.size() << std::endl;
+		std::cout << "rotRB" << rotationRB_vec.size() << " = [ " << rotationRB << " ]; " <<std::endl;
+		std::cout << "transRB" << rotationRB_vec.size() << " = [ " << translationRB << " ]; " << std::endl;
+		std::cout << "rotCB" << rotationRB_vec.size() << " = [ " << rotationCB << " ]; " << std::endl;
+		std::cout << "transCB" << rotationRB_vec.size() << " = [ " << translationCB << " ]; " << std::endl;
 #endif
 
 		int c = cv::waitKey ();
@@ -280,18 +294,18 @@ void CalibrationNode::performEstimation(){
 	Matrix3cf D = es.eigenvalues().asDiagonal();
 	Matrix3cf V = es.eigenvectors();
 
-	//std::cout << "D = [ " << D << " ];" << endl;
-	//std::cout << "V = [ " << V << " ];" << endl;
 	Matrix3cf Lambda = D.inverse().array().sqrt();
-	//std::cout << "Lambda = [ " << Lambda  << " ]; " << endl;
-	Matrix3cf x_est = V * Lambda * V.inverse() * M.transpose();
-	std::cout << "x_est = [ " << x_est.real()  << " ]; " << endl;
+	Matrix3cf Theta_X = V * Lambda * V.inverse() * M.transpose();
+	std::cout << "Orientation of Camera Frame with respect to Robot tool-tip frame." << std::endl;
+	std::cout << "Theta_X = [ " << Theta_X.real()  << " ]; " << endl;
 
 	//Estimating translational offset
 	for(int i=0; i < bB.rows()/3; i++){
-		bB.block(i*3,0,3,1) = x_est.real()*bB.block(i*3,0,3,1);
+		bB.block(i*3,0,3,1) = Theta_X.real()*bB.block(i*3,0,3,1);
 	}
 	bA = bA - bB; // this is d. saving memory
+
+	std::cout << "Translation of Camera Frame with respect to Robot tool-tip frame." << std::endl;
 	cout << "bX = [ " << (C.transpose()*C).inverse() * C.transpose() * bA << " ]; " << endl;
 
 }
@@ -360,7 +374,7 @@ int main(int argc, char **argv)
 
 	CalibrationNode CalibrationObject (n); // start the ball detector node with the node handle n
 
-	// Debugging
+	//Debugging
 	//CalibrationObject.generateData();
 	//CalibrationObject.performEstimation();
 

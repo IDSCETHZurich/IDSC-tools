@@ -1,0 +1,58 @@
+A ros package for handEyeCalibration based on 
+Park, F.C.; Martin, B.J.; , "Robot sensor calibration: solving AX=XB on the Euclidean group," Robotics and Automation, IEEE Transactions on , vol.10, no.5, pp.717-721, Oct 1994
+doi: 10.1109/70.326576
+URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=326576&isnumber=7747
+
+Subscribed Topics:
+
+/camera/image_rect [sensor_msgs/Image]
+	Rectified camera image
+/msrCartPos [geometry_msgs/Pose]
+	Robot tool-tip pose with respect to the robot base
+/camera/camera_info [sensor_msgs/CameraInfo]
+	Intrinsic camera matrix for cv::solvePnP
+	
+	
+Published Topics:
+None
+[TODO]
+
+Output (command line):
+Theta_X
+	Orientation of Camera Frame with respect to Robot tool-tip frame.
+b_X
+	Translation of Camera Frame with respect to Robot tool-tip frame.
+	
+Parameters:
+squares_per_column
+	Checkerboard squares per column 
+squares_per_row
+	Checkerboard squares per row
+square_size
+	Checkerboard square size in meters
+	
+Running the calibration: 
+	0. Rigidly place the checkerboard in the visible range of the handEye (robot-camera) sensor.
+	1. Make sure the ./launch/camera.launch file will work for your camera. 
+		If you have a prosilica, you should be able use the ./launch/camera.launch 
+		by changing only the ip_address. 
+	2. Make sure your robot is publishing its pose [/msrCartPos]
+		Special Case: KUKA-LWR/FRI/OROCOS users can use ./launch/handEyeCalibration.launch. 
+		After launching jump to Step 4.
+	3. Launch ./launch/handEyeCalibration.launch
+		This will launch the camera (./launch/camera.launch) and the handEyeCalibration node. 
+	4. Move you robot inside the visible range and take several measurements. 
+		[Note: It is recommended to stop (velocity=0) the robot before recording measurements]  
+		4.1. Left mouse click on the image window to record a measurement.
+		4.2. Press 'q' to delete current measurement if you are not satisfied.
+			You may have to do this in case the checkerboard was poorly detected.
+		4.3. If you are satisfied with the current measurement, press any key, except 'q', to continue. 
+		4.4. Move the robot again and continue taking around 15~20 measurements. 
+	5. Right mouse click on the image window to estimate the Transformation of the camera frame 
+		with respect to the robot tool-tip.
+			
+Developers: 
+	If you want to implement a new estimation algorithm use the 
+	CalibrationObject.generateData();
+	CalibrationObject.performEstimation();
+	inside the main to avoid running the robot/camera every time you want to test.
