@@ -1,0 +1,9 @@
+.cproject
+.project
+.pydevproject
+*.pc
+*build/
+*lib/
+*bin/
+*.log
+
