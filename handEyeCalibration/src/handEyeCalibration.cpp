@@ -212,7 +212,7 @@ int CalibrationNode::storeData ()
 		int c = cv::waitKey ();
 
 		if ('q'==(char)c){
-			cout << "key 'q' pressed: pop_back called" << endl;
+			std::cout << "key 'q' pressed: pop_back called" << std::endl;
 			rotationRB_vec.pop_back();
 			translationRB_vec.pop_back();
 			rotationCB_vec.pop_back();
@@ -225,7 +225,7 @@ int CalibrationNode::storeData ()
 	else
 	{
 		std::cout << "No Checkerboard has been found !" << std::endl;
-		cout << cv::waitKey ();
+		std::cout << cv::waitKey ();
 
 		return checkerboard_not_found;
 	}
@@ -268,26 +268,29 @@ void CalibrationNode::performEstimation(){
 				ai = getLogTheta(A.block(0,0,3,3));
 				bi = getLogTheta(B.block(0,0,3,3));
 
-				M += bi*ai.transpose();
+                Matrix3f temp_M = bi*ai.transpose();
+                if (!does_matrix_contain_nan(temp_M))
+                {
+                    M += temp_M;
 
-				MatrixXf C_tmp = C;
-				C.resize(C.rows()+3, NoChange);
-				C << C_tmp,  Matrix3f::Identity() - A.block(0,0,3,3);
+                    MatrixXf C_tmp = C;
+                    C.resize(C.rows()+3, NoChange);
+                    C << C_tmp,  Matrix3f::Identity() - A.block(0,0,3,3);
 
-				V_tmp = bA;
-				bA.resize(bA.rows()+3, NoChange);
-				bA << V_tmp, A.block(0,3,3,1);
+                    V_tmp = bA;
+                    bA.resize(bA.rows()+3, NoChange);
+                    bA << V_tmp, A.block(0,3,3,1);
 
-				V_tmp = bB;
-				bB.resize(bB.rows()+3, NoChange);
-				bB << V_tmp, B.block(0,3,3,1);
-
+                    V_tmp = bB;
+                    bB.resize(bB.rows()+3, NoChange);
+                    bB << V_tmp, B.block(0,3,3,1);
+                }
 			}//end of if i!=j
 		}
 	}//end of for(.. i < rotationRB_vec.size(); ..)
 
 #if ESTIMATION_DEBUG
-	std::cout << "M = [ " << M << " ]; " << endl;
+	std::cout << "M = [ " << M << " ]; " << std::endl;
 #endif
 
 	EigenSolver<Matrix3f> es(M.transpose()*M);
@@ -297,7 +300,7 @@ void CalibrationNode::performEstimation(){
 	Matrix3cf Lambda = D.inverse().array().sqrt();
 	Matrix3cf Theta_X = V * Lambda * V.inverse() * M.transpose();
 	std::cout << "Orientation of Camera Frame with respect to Robot tool-tip frame." << std::endl;
-	std::cout << "Theta_X = [ " << Theta_X.real()  << " ]; " << endl;
+	std::cout << "Theta_X = [ " << Theta_X.real()  << " ]; " << std::endl;
 
 	//Estimating translational offset
 	for(int i=0; i < bB.rows()/3; i++){
@@ -306,7 +309,7 @@ void CalibrationNode::performEstimation(){
 	bA = bA - bB; // this is d. saving memory
 
 	std::cout << "Translation of Camera Frame with respect to Robot tool-tip frame." << std::endl;
-	cout << "bX = [ " << (C.transpose()*C).inverse() * C.transpose() * bA << " ]; " << endl;
+	std::cout << "bX = [ " << (C.transpose()*C).inverse() * C.transpose() * bA << " ]; " << std::endl;
 
 }
 
@@ -333,14 +336,14 @@ bool CalibrationNode::generateData(){
 		tmp_v3f = Vector3f::Random().normalized();
 		tmp_m3f = AngleAxisf((double(rand())/RAND_MAX), Vector3f::Random().normalized());
 
-		cout << "rotRB" << i << " = [ " << tmp_m3f << " ]; " << endl;
-		cout << "transRB" << i << " = [ " << tmp_v3f << " ]; " << endl;
+		std::cout << "rotRB" << i << " = [ " << tmp_m3f << " ]; " << std::endl;
+		std::cout << "transRB" << i << " = [ " << tmp_v3f << " ]; " << std::endl;
 
 		A << tmp_m3f, tmp_v3f, 0.0, 0.0, 0.0, 1.0;
 		C = (A*B).inverse() * D;
 
-		cout << "rotCB" << i << " = [ " << C.block(0,0,3,3) << " ]; " << endl;
-		cout << "transCB" << i << " = [ " << C.block(0,3,3,1) << " ]; " << endl;
+		std::cout << "rotCB" << i << " = [ " << C.block(0,0,3,3) << " ]; " << std::endl;
+		std::cout << "transCB" << i << " = [ " << C.block(0,3,3,1) << " ]; " << std::endl;
 
 		//pushing back data into vectors
 		rotationRB_vec.push_back(tmp_m3f);
@@ -349,7 +352,7 @@ bool CalibrationNode::generateData(){
 		translationCB_vec.push_back(C.block(0,3,3,1));
 	}
 
-	cout << "Data size: " << rotationRB_vec.size() << endl;
+	std::cout << "Data size: " << rotationRB_vec.size() << std::endl;
 
 	return true;
 
