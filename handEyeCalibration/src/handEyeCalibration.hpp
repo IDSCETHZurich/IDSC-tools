@@ -35,7 +35,7 @@
 #include <iostream>
 #include <Eigen/Eigen>
 
-const string IMAGE_WINDOW = "Image Window";
+const std::string IMAGE_WINDOW = "Image Window";
 
 class CalibrationNode
 {
