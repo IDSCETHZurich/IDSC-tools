@@ -103,7 +103,15 @@ public:
 
 	//math
 	Eigen::Vector3f getLogTheta(Eigen::Matrix3f);
-
+    bool does_matrix_contain_nan(const Eigen::Matrix3f &m)
+    {
+      for (int i=0;i<m.matrix().rows();i++) {
+        for (int j=0;j<m.matrix().cols();j++) {
+          if ((boost::math::isnan)(m(i,j))) return true;
+        }
+      }
+    return false;
+    }
 };
 
 #endif /* CAMERA_CALIBRATION_HPP_ */

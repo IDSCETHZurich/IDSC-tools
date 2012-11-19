@@ -268,20 +268,23 @@ void CalibrationNode::performEstimation(){
 				ai = getLogTheta(A.block(0,0,3,3));
 				bi = getLogTheta(B.block(0,0,3,3));
 
-				M += bi*ai.transpose();
+                Matrix3f temp_M = bi*ai.transpose();
+                if (!does_matrix_contain_nan(temp_M))
+                {
+                    M += temp_M;
 
-				MatrixXf C_tmp = C;
-				C.resize(C.rows()+3, NoChange);
-				C << C_tmp,  Matrix3f::Identity() - A.block(0,0,3,3);
+                    MatrixXf C_tmp = C;
+                    C.resize(C.rows()+3, NoChange);
+                    C << C_tmp,  Matrix3f::Identity() - A.block(0,0,3,3);
 
-				V_tmp = bA;
-				bA.resize(bA.rows()+3, NoChange);
-				bA << V_tmp, A.block(0,3,3,1);
+                    V_tmp = bA;
+                    bA.resize(bA.rows()+3, NoChange);
+                    bA << V_tmp, A.block(0,3,3,1);
 
-				V_tmp = bB;
-				bB.resize(bB.rows()+3, NoChange);
-				bB << V_tmp, B.block(0,3,3,1);
-
+                    V_tmp = bB;
+                    bB.resize(bB.rows()+3, NoChange);
+                    bB << V_tmp, B.block(0,3,3,1);
+                }
 			}//end of if i!=j
 		}
 	}//end of for(.. i < rotationRB_vec.size(); ..)
